@@ -1,0 +1,7 @@
+developper une app todo qui permet au user de creer mettre à jour et lister une tache 
+les user peuvent ajouter des categories pour organiser les taches
+
+fonctionnalités :
+-creer un compte et se connecter à firebase
+-ajouter modifier et lister un categorie
+-lister une tache avec leur description, mettre à jour et supprimer 

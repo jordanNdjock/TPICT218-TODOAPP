@@ -1,94 +1,26 @@
-<h1 align="center">Welcome to flutter-with-firebase 👋</h1>
-<p>
-  <img alt="Version" src="https://img.shields.io/badge/version-0.0.1-blue.svg?cacheSeconds=2592000" />
-  <a href="#" target="_blank">
-    <img alt="License: MIT" src="https://img.shields.io/badge/License-MIT-yellow.svg" />
-  </a>
-</p>
+# todo
+ToDo App Fullstack Development with Flutter, Figma and Firebase
 
-> This project made for those who wanted to learn about the firebase and thier Auth, Cloud Storage and Cloud function modules with Flutter. This repo will help to understand how to use firebase with flutter using a fully functional Todo App
+You can observe to predesign process in Figma
 
-### 🏠 [Homepage](https://www.youtube.com/playlist?list=PLtIU0BH0pkKrQZUFWENF_VXINhfv9WiIA)
+![Ekran Alıntısı](https://user-images.githubusercontent.com/105917287/187682921-62da3b1e-dacf-416d-9b5d-e5b57dc292c9.PNG)
 
-### ✨ [Demo](https://www.youtube.com/playlist?list=PLtIU0BH0pkKrQZUFWENF_VXINhfv9WiIA)
+# 💫 About Me:
+I'm currently working on enhance myself. I'm looking to collaborate on more flutter apps development. I'm looking for help from who has a mentor enhancing myself about flutter apps development. I'm currently learning UI/UX designing and developing with HTML5, CSS3, JS, Flutter and Bootstrap. Ask me about Flutter Front-End development and UI designing through Figma and Adobe XD. fun fact is Flutter, HTML, CSS and JS have many package. Although, you gonna use only a couple of packages throughout Flutter app developing. 
 
-## Topic covered
 
-- SignIn/Sign Up with Email and Password
-- SignIn/SignUp with Google
-- SignIn/SignUp using Phone Number
-- Create New todo
-- Perform Crud Operation ( Create, Read , Delete and Update todo )
+## 🌐 Socials:
+[![Behance](https://img.shields.io/badge/Behance-1769ff?logo=behance&logoColor=white)](https://behance.net/https://www.behance.net/rfatoktar) [![LinkedIn](https://img.shields.io/badge/LinkedIn-%230077B5.svg?logo=linkedin&logoColor=white)](https://linkedin.com/in/https://www.linkedin.com/in/rifat-oktar-384a2211b/) [![Reddit](https://img.shields.io/badge/Reddit-%23FF4500.svg?logo=Reddit&logoColor=white)](https://reddit.com/user/https://www.reddit.com/user/-rifocalypse-) 
 
-## Screenshots
+# 💻 Tech Stack:
+![C](https://img.shields.io/badge/c-%2300599C.svg?style=for-the-badge&logo=c&logoColor=white) ![Dart](https://img.shields.io/badge/dart-%230175C2.svg?style=for-the-badge&logo=dart&logoColor=white) ![HTML5](https://img.shields.io/badge/html5-%23E34F26.svg?style=for-the-badge&logo=html5&logoColor=white) ![JavaScript](https://img.shields.io/badge/javascript-%23323330.svg?style=for-the-badge&logo=javascript&logoColor=%23F7DF1E) ![Bootstrap](https://img.shields.io/badge/bootstrap-%23563D7C.svg?style=for-the-badge&logo=bootstrap&logoColor=white) ![Flutter](https://img.shields.io/badge/Flutter-%2302569B.svg?style=for-the-badge&logo=Flutter&logoColor=white) ![Adobe XD](https://img.shields.io/badge/Adobe%20XD-470137?style=for-the-badge&logo=Adobe%20XD&logoColor=#FF61F6) ![Adobe Premiere Pro](https://img.shields.io/badge/Adobe%20Premiere%20Pro-9999FF.svg?style=for-the-badge&logo=Adobe%20Premiere%20Pro&logoColor=white) 	![Figma](https://img.shields.io/badge/figma-%23F24E1E.svg?style=for-the-badge&logo=figma&logoColor=white) ![Notion](https://img.shields.io/badge/Notion-%23000000.svg?style=for-the-badge&logo=notion&logoColor=white) ![Postman](https://img.shields.io/badge/Postman-FF6C37?style=for-the-badge&logo=postman&logoColor=white) ![CSS3](https://img.shields.io/badge/css3-%231572B6.svg?style=for-the-badge&logo=css3&logoColor=white)
+# 📊 GitHub Stats:
+![](https://github-readme-stats.vercel.app/api?username=bravo24&theme=dark&hide_border=false&include_all_commits=true&count_private=true)<br/>
+![](https://github-readme-streak-stats.herokuapp.com/?user=bravo24&theme=dark&hide_border=false)<br/>
+![](https://github-readme-stats.vercel.app/api/top-langs/?username=bravo24&theme=dark&hide_border=false&include_all_commits=true&count_private=true&layout=compact)
 
-<h3 align="center" style="color:green" >1. Intro screenshots</h3>
- <p align="center">
-<img src="https://github.com/DevStack06/images/blob/master/todo/1.png" width="500"></img>
-</p>
-<br>
+### ✍️ Random Dev Quote
+![](https://quotes-github-readme.vercel.app/api?type=vetical&theme=radical)
 
-<h3 align="center" style="color:green" >2. SignIn/ SIgnUp page</h3>
- <p align="center">
-<img src="https://github.com/DevStack06/images/blob/master/todo/2.png" width="500"></img>
-</p>
-<br>
-
-<h3 align="center" style="color:green" >3. Google login</h3>
- <p align="center">
-<img src="https://github.com/DevStack06/images/blob/master/todo/3.png" width="500"></img>
-</p>
-<br>
-
-<h3 align="center" style="color:green" >4. SignIn/SignUp via mobile number and otp page</h3>
- <p align="center">
-<img src="https://github.com/DevStack06/images/blob/master/todo/4.png" width="500"></img>
-</p>
-<br>
-<h3 align="center" style="color:green" >5. Home Page </h3>
- <p align="center">
-<img src="https://github.com/DevStack06/images/blob/master/todo/7.png" width="500"></img>
-</p>
-<br>
-<h3 align="center" style="color:green" >6. Create new todo page </h3>
- <p align="center">
-<img src="https://github.com/DevStack06/images/blob/master/todo/6.png" width="500"></img>
-</p>
-<br>
-<h3 align="center" style="color:green" >7. View your todo page</h3>
- <p align="center">
-<img src="https://github.com/DevStack06/images/blob/master/todo/8.png" width="500"></img>
-</p>
-<br>
-<h3 align="center" style="color:green" >8. Update/Delete todo page</h3>
- <p align="center">
-<img src="https://github.com/DevStack06/images/blob/master/todo/9.png" width="500"></img>
-</p>
-<br>
-
-## Install
-
-```sh
-flutter pub get
-```
-
-## Usage
-
-```sh
-flutter run
-```
-
-## Author
-
-👤 **Balram Rathore**
-
-- Website: http://www.youtube.com/c/DevStack
-- Github: [@DevStack06](https://github.com/DevStack06)
-
-## Show your support
-
-Give a ⭐️ if this project helped you!
-
-<a href="https://www.patreon.com/DevStack06">
-  <img src="https://c5.patreon.com/external/logo/become_a_patron_button@2x.png" width="160">
-</a>
+---
+[![](https://visitcount.itsvg.in/api?id=bravo24&icon=9&color=6)](https://visitcount.itsvg.in)

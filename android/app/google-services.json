@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "633690172644",
+    "project_id": "ict-todoapp-eb5cf",
+    "storage_bucket": "ict-todoapp-eb5cf.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:633690172644:android:37538eb0dcafb9148e50f1",
+        "android_client_info": {
+          "package_name": "com.example.todo"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "633690172644-p37cvgd4ht66dgt9l4n04h595kfejttg.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD3txPJcAJZfK3FenwhMj9wOdT0lmmB1yQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "633690172644-p37cvgd4ht66dgt9l4n04h595kfejttg.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
