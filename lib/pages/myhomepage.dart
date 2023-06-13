@@ -81,7 +81,7 @@
 // }
 import 'package:flutter/material.dart';
 import 'package:todo/pages/home_page.dart';
-
+import 'package:todo/pages/categories_page.dart';
 class MyHomePage extends StatefulWidget {
   @override
   _MyHomePageState createState() => _MyHomePageState();
@@ -92,8 +92,8 @@ class _MyHomePageState extends State<MyHomePage> {
 
   // Liste des pages de l'application
   final List<Widget> _pages = [
-    HomePage(),
-    CategoryPage(),
+    const HomePage(),
+    CategoriesPage(),
     ProfilePage(),
   ];
 
@@ -139,14 +139,7 @@ class _MyHomePageState extends State<MyHomePage> {
 }
 
 // Création de la page de catégorie
-class CategoryPage extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Text('Catégorie'),
-    );
-  }
-}
+
 
 // Création de la page de profil
 class ProfilePage extends StatelessWidget {

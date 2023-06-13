@@ -14,6 +14,6 @@ class Todo {
     required this.startDate,
     required this.endDate,
     required this.isComplete,
-    required this.photoUrl,
+    required this.photoUrl, required categoryID,
   });
 }

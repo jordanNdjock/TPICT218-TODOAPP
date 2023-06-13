@@ -1,10 +1,10 @@
 class Category{
-   String uid;
+   String categoryID;
   String title;
   String description;
 
   Category({
-    required this.uid,
+    required this.categoryID,
     required this.title,
     required this.description,});
 }
