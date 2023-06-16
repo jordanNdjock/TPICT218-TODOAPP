@@ -81,6 +81,7 @@
 // }
 import 'package:flutter/material.dart';
 import 'package:todo/pages/home_page.dart';
+import 'package:todo/pages/profile_page.dart';
 import 'package:todo/pages/categories_page.dart';
 class MyHomePage extends StatefulWidget {
   @override
@@ -142,11 +143,4 @@ class _MyHomePageState extends State<MyHomePage> {
 
 
 // Création de la page de profil
-class ProfilePage extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Text('Profil'),
-    );
-  }
-}
+

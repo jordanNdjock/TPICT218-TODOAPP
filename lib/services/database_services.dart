@@ -129,12 +129,20 @@ Future<void> updateTodo(String uid, {String? name, String? description}) async {
     return todosCollection.snapshots().map(todoFromFirestore);
   }
 
-  Future<void> createCategory({required String name, required String description}) async {
-    await categoriesCollection.add({
-      "name": name,
-      "description": description,
-    });
-  }
+
+Future<void> createCategory({required String userId, required String name, required String description}) async {
+  DocumentReference categoryRef = FirebaseFirestore.instance
+      .collection('users')
+      .doc(userId)
+      .collection('categories')
+      .doc();
+
+  await categoryRef.set({
+    'title': name,
+    'description': description,
+  });
+}
+
 
   Future<void> updateCategory({required String categoryID, required String name, required String description}) async {
     await categoriesCollection.doc(categoryID).update({
@@ -161,9 +169,28 @@ Future<void> updateTodo(String uid, {String? name, String? description}) async {
   Stream<List<Category>> listCategories() {
     return categoriesCollection.snapshots().map(categoriesFromFirestore);
   }
-  Future<List<Category>> getCategories() async {
-    QuerySnapshot snapshot = await categoriesCollection.get();
-    return categoriesFromFirestore(snapshot);
-  }
+  // Future<List<Category>> getCategories() async {
+  //   QuerySnapshot snapshot = await categoriesCollection.get();
+  //   return categoriesFromFirestore(snapshot);
+  // }
+  Future<List<Category>> getCategories(String userId) async {
+  QuerySnapshot snapshot = await FirebaseFirestore.instance
+      .collection('users')
+      .doc(userId)
+      .collection('categories')
+      .get();
+
+  List<Category> categories = snapshot.docs.map((doc) {
+    Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+    return Category(
+      categoryID: doc.id,
+      title: data['title'],
+      description: data['description'],
+    );
+  }).toList();
+
+  return categories;
+}
+
 }
 

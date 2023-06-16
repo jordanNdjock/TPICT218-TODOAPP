@@ -261,3 +261,244 @@ class _LogInPageState extends State<LogInPage> {
     ));
   }
 }
+
+// import 'package:flutter/material.dart';
+// import 'package:iconsax/iconsax.dart';
+// import 'package:todo/pages/create_account_page.dart';
+// import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
+// import 'package:todo/pages/myhomepage.dart';
+// import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+// final firebaseAuthProvider = Provider<firebase_auth.FirebaseAuth>((ref) {
+//   return firebase_auth.FirebaseAuth.instance;
+// });
+
+// final circularButtonStateProvider = StateProvider<bool>((ref) => false);
+
+
+// class LogInPage extends ConsumerWidget {
+//   const LogInPage({Key? key}) : super(key: key);
+
+//   @override
+//   Widget build(BuildContext context, WidgetRef ref) {
+//     final firebaseAuth = ref.watch(firebaseAuthProvider);
+//     final TextEditingController _emailController = TextEditingController();
+//     final TextEditingController _pwdController = TextEditingController();
+//     final circularButtonState = ref.watch(circularButtonStateProvider);
+
+//     final textFieldFocusNode = FocusNode();
+//     bool _obscured = false;
+
+//     void _toggleObscured() {
+//       if (textFieldFocusNode.hasPrimaryFocus) {
+//         return;
+//       }
+//       textFieldFocusNode.canRequestFocus = false;
+//     }
+
+//     return SafeArea(
+//       child: Scaffold(
+//         body: SingleChildScrollView(
+//           child: Column(
+//             children: <Widget>[
+//               const SizedBox(height: 60),
+//               Container(
+//                 height: 420,
+//                 margin: const EdgeInsets.only(left: 20, top: 30, right: 20),
+//                 child: Column(
+//                   mainAxisAlignment: MainAxisAlignment.start,
+//                   crossAxisAlignment: CrossAxisAlignment.start,
+//                   children: <Widget>[
+//                     const Spacer(),
+//                     SizedBox(
+//                       height: 95,
+//                       child: Column(
+//                         mainAxisAlignment: MainAxisAlignment.start,
+//                         crossAxisAlignment: CrossAxisAlignment.start,
+//                         children: <Widget>[
+//                           const Text(
+//                             "Email",
+//                             style: TextStyle(
+//                               color: Colors.black,
+//                               fontSize: 20,
+//                               fontWeight: FontWeight.w700,
+//                             ),
+//                           ),
+//                           const SizedBox(height: 10),
+//                           Container(
+//                             height: 50,
+//                             width: MediaQuery.of(context).size.width,
+//                             decoration: BoxDecoration(
+//                               color: const Color(0xffd9d9d9),
+//                               borderRadius: BorderRadius.circular(5),
+//                             ),
+//                             child: TextField(
+//                               controller: _emailController,
+//                               style: const TextStyle(
+//                                 color: Colors.black,
+//                                 fontSize: 20,
+//                               ),
+//                               decoration: InputDecoration(
+//                                 floatingLabelBehavior: FloatingLabelBehavior.never,
+//                                 filled: true,
+//                                 fillColor: const Color(0xff50C4ED).withOpacity(0),
+//                                 isDense: true,
+//                                 border: OutlineInputBorder(
+//                                   borderSide: BorderSide.none,
+//                                   borderRadius: BorderRadius.circular(12),
+//                                 ),
+//                               ),
+//                             ),
+//                           ),
+//                         ],
+//                       ),
+//                     ),
+//                     const SizedBox(height: 20),
+//                     SizedBox(
+//                       height: 110,
+//                       child: Column(
+//                         mainAxisAlignment: MainAxisAlignment.start,
+//                         crossAxisAlignment: CrossAxisAlignment.start,
+//                         children: <Widget>[
+//                           const Text(
+//                             "Mot de passe",
+//                             style: TextStyle(
+//                               color: Colors.black,
+//                               fontSize: 20,
+//                               fontWeight: FontWeight.w700,
+//                             ),
+//                           ),
+//                           const SizedBox(height: 10),
+//                           Container(
+//                             height: 50,
+//                             width: MediaQuery.of(context).size.width,
+//                             decoration: BoxDecoration(
+//                               color: const Color(0xffd9d9d9),
+//                               borderRadius: BorderRadius.circular(5),
+//                             ),
+//                             child: TextField(
+//                               controller: _pwdController,
+//                               keyboardType: TextInputType.visiblePassword,
+//                               obscureText: _obscured,
+//                               style: const TextStyle(
+//                                 color: Colors.black,
+//                                 fontSize: 20,
+//                               ),
+//                               focusNode: textFieldFocusNode,
+//                               decoration: InputDecoration(
+//                                 floatingLabelBehavior: FloatingLabelBehavior.never,
+//                                 filled: true,
+//                                 fillColor: const Color(0xff50C4ED).withOpacity(0),
+//                                 isDense: true,
+//                                 border: OutlineInputBorder(
+//                                   borderSide: BorderSide.none,
+//                                   borderRadius: BorderRadius.circular(12),
+//                                 ),
+//                                 suffixIcon: Padding(
+//                                   padding: const EdgeInsets.fromLTRB(0, 0, 0, 0),
+//                                   child: GestureDetector(
+//                                     onTap: _toggleObscured,
+//                                     child: Icon(
+//                                       _obscured ? Iconsax.eye : Iconsax.eye_slash,
+//                                       size: 20,
+//                                       color: const Color(0xff3B999B),
+//                                     ),
+//                                   ),
+//                                 ),
+//                               ),
+//                             ),
+//                           ),
+//                         ],
+//                       ),
+//                     ),
+//                     const SizedBox(height: 30),
+//                     SizedBox(
+//                       height: 40,
+//                       child: Row(
+//                         children: <Widget>[
+//                           const Text(
+//                             "Ou",
+//                             style: TextStyle(
+//                               color: Colors.black,
+//                               fontSize: 15,
+//                               fontWeight: FontWeight.w500,
+//                             ),
+//                           ),
+//                           TextButton(
+//                             onPressed: () {
+//                               Navigator.push(
+//                                 context,
+//                                 MaterialPageRoute(builder: (context) => const CreateAccountPage()),
+//                               );
+//                             },
+//                             child: const Text(
+//                               "Creer un compte!",
+//                               style: TextStyle(
+//                                 color: Color(0xff3B999B),
+//                                 fontSize: 15,
+//                                 fontWeight: FontWeight.bold,
+//                               ),
+//                             ),
+//                           ),
+//                         ],
+//                       ),
+//                     ),
+//                     const SizedBox(height: 20),
+//                     Container(
+//                       height: 55,
+//                       width: MediaQuery.of(context).size.width,
+//                       decoration: BoxDecoration(
+//                         color: const Color(0xff3B999B),
+//                         borderRadius: BorderRadius.circular(5),
+//                       ),
+//                       child: ElevatedButton(
+//                         style: ElevatedButton.styleFrom(
+//                           backgroundColor: Colors.transparent,
+//                           elevation: 0.0,
+//                         ),
+//                         onPressed: circularButtonState.state
+//                             ? null
+//                             : () async {
+//                                 try {
+//                                   ref.read(circularButtonStateProvider).state = true;
+//                                   firebase_auth.UserCredential userCredential =
+//                                       await firebaseAuth.signInWithEmailAndPassword(
+//                                     email: _emailController.text,
+//                                     password: _pwdController.text,
+//                                   );
+//                                   print(userCredential.user?.email);
+//                                   circularButtonState.state = false;
+//                                   Navigator.pushAndRemoveUntil(
+//                                     context,
+//                                     MaterialPageRoute(builder: (builder) => MyHomePage()),
+//                                     (route) => false,
+//                                   );
+//                                 } catch (e) {
+//                                   final snackbar = SnackBar(content: Text(e.toString()));
+//                                   ScaffoldMessenger.of(context).showSnackBar(snackbar);
+//                                   circularButtonState.state = false;
+//                                 }
+//                               },
+//                         child: circularButtonState.state
+//                             ? const CircularProgressIndicator(color: Colors.white)
+//                             : const Text(
+//                                 "Se connecter",
+//                                 style: TextStyle(
+//                                   color: Colors.white,
+//                                   fontSize: 20,
+//                                   fontWeight: FontWeight.w700,
+//                                 ),
+//                               ),
+//                       ),
+//                     ),
+//                   ],
+//                 ),
+//               ),
+//             ],
+//           ),
+//         ),
+//       ),
+//     );
+//   }
+// }
+

@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 // import 'package:flutter_svg/flutter_svg.dart';
 import 'package:iconsax/iconsax.dart';
@@ -8,6 +9,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:todo/models/category_model.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+import 'dart:async';
 import 'dart:io';
 import 'package:intl/intl.dart';
 
@@ -31,7 +33,8 @@ List<Category> categories = []; // Liste des catégories existantes
 
 
 Future<void> _loadCategories() async {
-  List<Category> loadedCategories = await DatabaseService().getCategories();
+   User? user = FirebaseAuth.instance.currentUser;
+  List<Category> loadedCategories = await DatabaseService().getCategories(user!.email!);
   setState(() {
     categories = loadedCategories;
   });
@@ -104,6 +107,7 @@ StreamBuilder<List<Todo>>(
       );
     }
     List<Todo> todos = snapshot.data!;
+    
     return SizedBox(
       height: 500,
       width: MediaQuery.of(context).size.width,
@@ -115,6 +119,7 @@ StreamBuilder<List<Todo>>(
         shrinkWrap: true,
         itemBuilder: (context, index) {
           Todo todo = todos[index];
+          
           return Dismissible(
             key: Key(todo.title),
             background: Container(
@@ -734,6 +739,7 @@ GestureDetector(
    
     
       String photoUrl = await _uploadPhoto(photoFile!);
+      print(photoUrl);
       String categoryID = selectedCategory;
       await DatabaseService().createNewTodo(
         title: _todoNameController.text.trim(),
