@@ -3,8 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:todo/services/database_services.dart';
 import 'package:todo/models/category_model.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'dart:math';
-import 'dart:ui';
 
 final categoriesProvider = FutureProvider<List<Category>>((ref) async {
   User? user = FirebaseAuth.instance.currentUser;
@@ -20,39 +18,15 @@ class CategoriesPage extends ConsumerWidget {
   CategoriesPage({super.key});
 
 
-//   Future<void> _createCategory(BuildContext context, String userId) async {
-//   String name = _nameController.text.trim();
-//   String description = _descriptionController.text.trim();
-
-//   if (name.isNotEmpty && description.isNotEmpty) {
-//     await DatabaseService().createCategory(
-//       userId: userId,
-//       name: name,
-//       description: description,
-//     );
-//     _nameController.clear();
-//     _descriptionController.clear();
-//   }
-// }
-List<int> categoryColors = [
-  Colors.red.value,
-  Colors.blue.value,
-  Colors.green.value,
-  Colors.yellow.value,
-];
-
-Future<void> _createCategory(BuildContext context, String userId) async {
+  Future<void> _createCategory(BuildContext context, String userId) async {
   String name = _nameController.text.trim();
   String description = _descriptionController.text.trim();
 
   if (name.isNotEmpty && description.isNotEmpty) {
-    int colorIndex = Random().nextInt(categoryColors.length);
-    categoryColors.add(colorIndex); // Ajouter l'index de couleur à la liste
     await DatabaseService().createCategory(
       userId: userId,
       name: name,
       description: description,
-      // Ne pas enregistrer l'index de couleur dans la classe Category
     );
     _nameController.clear();
     _descriptionController.clear();
@@ -187,34 +161,28 @@ Future<void> _createCategory(BuildContext context, String userId) async {
       body: categoriesAsyncValue.when(
         data: (categories) {
           return ListView.builder(
-  itemCount: categories.length,
-  itemBuilder: (BuildContext context, int index) {
-    Category category = categories[index];
-    int colorIndex = categoryColors[index];
-    Color categoryColor = Color(categoryColors[colorIndex]);
-
-    return ListTile(
-      title: Text(category.title),
-      subtitle: Text(category.description),
-      tileColor: categoryColor, // Couleur de fond du ListTile
-
-      trailing: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          IconButton(
-            icon: Icon(Icons.edit),
-            onPressed: () => _showCategoryDialog(context, category: category),
-          ),
-          IconButton(
-            icon: Icon(Icons.delete),
-            onPressed: () => _showDeleteConfirmationDialog(context, category),
-          ),
-        ],
-      ),
-    );
-  },
-);
-
+            itemCount: categories.length,
+            itemBuilder: (BuildContext context, int index) {
+              Category category = categories[index];
+              return ListTile(
+                title: Text(category.title),
+                subtitle: Text(category.description),
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      icon: Icon(Icons.edit),
+                      onPressed: () => _showCategoryDialog(context, category: category),
+                    ),
+                    IconButton(
+                      icon: Icon(Icons.delete),
+                      onPressed: () => _showDeleteConfirmationDialog(context, category),
+                    ),
+                  ],
+                ),
+              );
+            },
+          );
         },
         loading: () => Center(child: CircularProgressIndicator()),
         error: (error, stackTrace) => Center(child: Text('Une erreur s\'est produite')),
