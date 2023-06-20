@@ -289,8 +289,9 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
 import 'package:todo/pages/myhomepage.dart';
-import 'package:todo/pages/log_in_page.dart';
+// import 'package:todo/pages/log_in_page.dart';
 import 'package:iconsax/iconsax.dart';
+import 'package:todo/services/database_services.dart';
 
 class CreateAccountPage extends StatefulWidget {
   const CreateAccountPage({Key? key}) : super(key: key);
@@ -567,8 +568,8 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
                               'nom': nom,
                               'password': password,
                             });
+                           createDefaultCategories(uid);
 
-                            print(userCredential.user?.email);
                             setState(() {
                               circular = false;
                             });
@@ -613,4 +614,8 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
       ),
     );
   }
+}
+
+createDefaultCategories(String uid)async {
+   await createDefaultCategories(uid);
 }

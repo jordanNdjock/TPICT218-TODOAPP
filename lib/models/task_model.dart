@@ -1,23 +1,27 @@
 enum TodoStatus { pending, inProgress, completed }
+
 class Todo {
   String uid;
   String title;
   String description;
- String startDate;
-  String endDate;
-  bool isComplete;
   String photoUrl;
-  // late TodoStatus status;
+  String endDate;
+  TodoStatus status;
+  final String categoryID;
+  List<String> participants;
+  String userID;
+  String startDate;
 
   Todo({
     required this.uid,
     required this.title,
     required this.description,
-    required this.startDate,
+    required this.photoUrl,
     required this.endDate,
-    required this.isComplete,
-    required this.photoUrl, 
-    required categoryID,
-    // required TodoStatus status,
+    required this.categoryID,
+    required this.status,
+    required this.participants, 
+    required this.userID,
+    required this.startDate,
   });
 }

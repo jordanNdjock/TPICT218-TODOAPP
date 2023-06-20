@@ -30,6 +30,28 @@ void initState() {
 
 List<Category> categories = []; // Liste des catégories existantes
 
+Future<bool?> confirmDismiss() async {
+  return await showDialog<bool>(
+    context: context,
+    builder: (BuildContext context) {
+      return AlertDialog(
+        title: Text('Confirmation'),
+        content: Text('Êtes-vous sûr de vouloir supprimer cette tâche ?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: Text('Annuler'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: Text('Supprimer'),
+          ),
+        ],
+      );
+    },
+  );
+}
+
 
 
 Future<void> _loadCategories() async {
@@ -41,18 +63,16 @@ Future<void> _loadCategories() async {
 }
   final TextEditingController _todoNameController = TextEditingController();
   final TextEditingController _todoDescController = TextEditingController();
-   final TextEditingController _todoStartDateController = TextEditingController();
   final  TextEditingController _todoEndDateController =  TextEditingController();
-  final TextEditingController _todoDescriptionController = TextEditingController();
+  final  TextEditingController _todoPartController =  TextEditingController();
+ 
   File? photoFile;
   bool isComplet = false;
-  // bool _switch = false;
   bool circular = false;
 
   void clearText() {
     _todoNameController.clear();
      _todoDescController.clear();
-     _todoStartDateController.clear();
      _todoEndDateController.clear();
   }
   Future<String> _uploadPhoto(File photoFile) async {
@@ -64,6 +84,29 @@ Future<void> _loadCategories() async {
     String downloadUrl = await storageSnapshot.ref.getDownloadURL();
     return downloadUrl;
   }
+double calculatePercentage(
+      String startStr, String endStr, String currentStr) {
+    DateFormat formatter = DateFormat('dd-MM-yyyy');
+    DateTime start = formatter.parse(startStr);
+    DateFormat format = DateFormat('dd-MM-yyyy');
+    DateTime end = format.parse(endStr);
+    DateTime current = DateTime.parse(currentStr);
+
+    if (current.isBefore(start)) {
+      return 0; // Si la date actuelle est avant la date de début, renvoyer 0
+    } else if (current.isAfter(end)) {
+      return 1; // Si la date actuelle est après la date de fin, renvoyer 100
+    } else {
+      // Calculer le pourcentage à l'aide de la différence entre les dates
+      final totalDuration = end.difference(start).inMilliseconds;
+      final elapsedDuration = current.difference(start).inMilliseconds;
+      final percent = (elapsedDuration / totalDuration);
+      return percent;
+    }
+  }
+
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -99,232 +142,200 @@ Future<void> _loadCategories() async {
           ),
 
 StreamBuilder<List<Todo>>(
-  stream: DatabaseService().listTodos(),
+  stream: DatabaseService().listUserTodos(),
   builder: (context, snapshot) {
-    if (!snapshot.hasData) {
-      return const CircularProgressIndicator(
+    if (snapshot.connectionState == ConnectionState.waiting) {
+      return const Center(child:CircularProgressIndicator(
         color: Colors.blue,
-      );
+      ),);
+    }
+    if (!snapshot.hasData) {
+      return Text('No data available');
     }
     List<Todo> todos = snapshot.data!;
-    
-    return SizedBox(
-      height: 500,
-      width: MediaQuery.of(context).size.width,
-      child: ListView.separated(
-        separatorBuilder: (context, index) => Divider(
-          color: Colors.grey[800],
-        ),
-        itemCount: todos.length,
-        shrinkWrap: true,
-        itemBuilder: (context, index) {
-          Todo todo = todos[index];
-          
-          return Dismissible(
-            key: Key(todo.title),
-            background: Container(
-              padding: const EdgeInsets.only(left: 20),
-              alignment: Alignment.centerLeft,
-              color: Colors.red,
-              child: const Icon(Icons.delete),
-            ),
-            onDismissed: (direction) async {
-              await DatabaseService().removeTodo(todo.uid);
-            },
-            child: Container(
-              height: 60,
-              width: MediaQuery.of(context).size.width,
-              margin: const EdgeInsets.symmetric(horizontal: 10),
-              decoration: BoxDecoration(
-                color: todo.isComplete ? const Color(0xff3B999B) : const Color(0xffEE5873),
-                borderRadius: BorderRadius.circular(5),
+
+    Future<bool?> confirmDismiss() async {
+      return await showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: Text('Confirmation'),
+            content: Text('Êtes-vous sûr de vouloir supprimer cette tâche ?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: Text('Annuler'),
               ),
-              child: ListTile(
-                onTap: () {
-                  DatabaseService().completeTask(todo.uid);
-                },
-                leading: CircleAvatar(
-                  backgroundImage: NetworkImage(todo.photoUrl),
-                ),
-                title: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      todo.title,
-                      style: TextStyle(
-                        fontSize: 20,
-                        color: Colors.grey[200],
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    Text(
-                      'Catégorie: ${todo.uid}',
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Colors.grey[400],
-                      ),
-                    ),
-                  ],
-                ),
-                subtitle: Text(
-                  todo.description,
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: Colors.grey[400],
-                  ),
-                ),
-                trailing: Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text(
-                      'Début: ${todo.startDate}',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.grey[400],
-                      ),
-                    ),
-                    Text(
-                      'Fin: ${todo.endDate}',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.grey[400],
-                      ),
-                    ),
-                  ],
-                ),
-                // Bouton de modification de la tâche
-                onLongPress: () {
-                  // Afficher la bottom sheet de modification de la tâche
-                  _showEditTodoBottomSheet(context, todo);
-                },
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                child: Text('Supprimer'),
               ),
-            ),
+            ],
           );
         },
+      );
+    }
+
+    return Container(
+      constraints: BoxConstraints(maxHeight: 600),
+      child: SingleChildScrollView(
+        child: ListView.separated(
+          separatorBuilder: (context, index) => Divider(
+            color: Colors.grey[800],
+          ),
+          itemCount: todos.length,
+          shrinkWrap: true,
+          physics: NeverScrollableScrollPhysics(),
+          itemBuilder: (context, index) {
+            Todo todo = todos[index];
+            String status = todo.status.toString();
+            bool isComplete = status == TodoStatus.completed.toString();
+            String now = DateTime.now().toString();
+            double progress = calculatePercentage(todo.startDate, todo.endDate, now);
+            Color progressColor;
+            
+            if (progress == 1.0) {
+              progressColor = Colors.red;
+              isComplete = true;
+            } else if (progress >= 0.75 && progress < 1.0) {
+              isComplete = false;
+              progressColor = Colors.red;
+            } else if (progress >= 0.5) {
+              progressColor = Colors.purple;
+              isComplete = false;
+            } else {
+              progressColor = Colors.orange;
+              isComplete = false;
+            }
+
+            return Dismissible(
+              key: Key(todo.uid),
+              background: Container(
+                padding: const EdgeInsets.only(left: 20),
+                alignment: Alignment.centerLeft,
+                color: Colors.red,
+                child: const Icon(Icons.delete),
+              ),
+              confirmDismiss: (direction) async {
+                return await confirmDismiss();
+              },
+              onDismissed: (direction) async {
+                bool? confirmDelete = await confirmDismiss();
+                if (confirmDelete != null && confirmDelete) {
+                  await DatabaseService().removeTodo(todo.uid);
+                }
+              },
+              child: Container(
+                height: 113,
+                width: MediaQuery.of(context).size.width,
+                margin: const EdgeInsets.symmetric(horizontal: 10),
+                decoration: BoxDecoration(
+                  color: isComplete ? Colors.green : Colors.yellow,
+                  borderRadius: BorderRadius.circular(5),
+                ),
+                child: ListTile(
+                  onTap: () {
+                    String newStatus = isComplete ? TodoStatus.inProgress.toString().split('.').last : TodoStatus.completed.toString().split('.').last;
+                    DatabaseService().updateTodoStatus(todo.uid, newStatus);
+                  },
+                  leading: CircleAvatar(
+                    backgroundImage: NetworkImage(todo.photoUrl),
+                  ),
+                  title: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        todo.title,
+                        style: TextStyle(
+                          fontSize: 20,
+                          color: isComplete ? Color.fromARGB(255, 243, 243, 243) : Color.fromARGB(255, 58, 58, 58),
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      Text(
+                        todo.description,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          color: Colors.black87,
+                        ),
+                      ),
+                      FutureBuilder<Category?>(
+                        future: DatabaseService().getCategoryById(todo.categoryID),
+                        builder: (context, snapshot) {
+                          if (snapshot.connectionState == ConnectionState.waiting) {
+                            return SizedBox();
+                          }
+                          if (!snapshot.hasData) {
+                            return Text('Category not found', style: TextStyle(color: Colors.grey[400]));
+                          }
+                          Category? category = snapshot.data!;
+                          return Text(
+                            'Categorie: ${category.title}',
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: Colors.black54,
+                            ),
+                          );
+                        },
+                      ),
+                      Text(
+                        'Participants: ${todo.participants.join(", ")}',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.black54,
+                        ),
+                      ),
+                      Text(
+                        'Date de fin: ${todo.endDate}',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.black54,
+                        ),
+                      ),
+                      AnimatedContainer(
+                        duration: Duration(seconds: 1),
+                        height: 05,
+                        width: MediaQuery.of(context).size.width * progress,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              Colors.orange,
+                              Colors.purple,
+                              Colors.transparent,
+                            ],
+                            stops: [
+                              0.0,
+                              progress,
+                              progress,
+                            ],
+                          ),
+                        ),
+                        child: LinearProgressIndicator(
+                          value: progress,
+                          backgroundColor: Colors.transparent,
+                          valueColor: AlwaysStoppedAnimation<Color>(progressColor),
+                        ),
+                      ),
+                    ],
+                  ),
+                  trailing: IconButton(
+                    icon: Icon(Icons.edit),
+                    onPressed: () {
+                      _showEditTodoBottomSheet(context, todo);
+                    },
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
       ),
     );
   },
 ),
 
-
-
-/*
-          StreamBuilder<List<Todo>>(
-            stream: DatabaseService().listTodos(),
-            builder: (context, snapshot) {
-              if (!snapshot.hasData) {
-                return const CircularProgressIndicator(
-                  color: Colors.white,
-                );
-              }
-              List<Todo>? todos = snapshot.data;
-              return SizedBox(
-                height: 500,
-                width: MediaQuery.of(context).size.height,
-                child: ListView.separated(
-                  separatorBuilder: (context, index) => Divider(
-                    color: Colors.grey[800],
-                  ),
-                  itemCount: todos!.length,
-                  shrinkWrap: true,
-                  itemBuilder: (context, index) {
-                    return Dismissible(
-                      key: Key(todos[index].title),
-                      background: Container(
-                        padding: const EdgeInsets.only(left: 20),
-                        alignment: Alignment.centerLeft,
-                        color: Colors.red,
-                        child: const Icon(Icons.delete),
-                      ),
-                      onDismissed: (direction) async {
-                        await DatabaseService().removeTodo(todos[index].uid);
-                      },
-                      child: todos[index].isComplete
-                          ? Container(
-                              height: 60,
-                              width: MediaQuery.of(context).size.width,
-                              margin:
-                                  const EdgeInsets.symmetric(horizontal: 10),
-                              decoration: BoxDecoration(
-                                  color: const Color(0xff3B999B),
-                                  borderRadius: BorderRadius.circular(5)),
-                              child: ListTile(
-                                onTap: () {
-                                  DatabaseService()
-                                      .completeTask(todos[index].uid);
-                                },
-                                leading: Container(
-                                  padding: const EdgeInsets.all(2),
-                                  height: 30,
-                                  width: 30,
-                                  decoration: const BoxDecoration(
-                                    color: Colors.white,
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: todos[index].isComplete
-                                      ? const Icon(
-                                          Iconsax.tick_circle,
-                                          color: Color(0xff3B999B),
-                                        )
-                                      : Container(),
-                                ),
-                                title: Text(
-                                  todos[index].title,
-                                  style: TextStyle(
-                                    fontSize: 20,
-                                    color: Colors.grey[200],
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ),
-                            )
-                          : Container(
-                              height: 60,
-                              width: MediaQuery.of(context).size.width,
-                              margin:
-                                  const EdgeInsets.symmetric(horizontal: 10),
-                              decoration: BoxDecoration(
-                                  color: const Color(0xffEE5873),
-                                  borderRadius: BorderRadius.circular(5)),
-                              child: ListTile(
-                                onTap: () {
-                                  DatabaseService()
-                                      .completeTask(todos[index].uid);
-                                },
-                                leading: Container(
-                                  padding: const EdgeInsets.all(2),
-                                  height: 30,
-                                  width: 30,
-                                  decoration: const BoxDecoration(
-                                    color: Colors.white,
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: todos[index].isComplete
-                                      ? const Icon(
-                                          Iconsax.tick_circle,
-                                          color: Color(0xff3B999B),
-                                        )
-                                      : Container(),
-                                ),
-                                title: Text(
-                                  todos[index].title,
-                                  style: TextStyle(
-                                    fontSize: 20,
-                                    color: Colors.grey[200],
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ),
-                            ),
-                    );
-                  },
-                ),
-              );
-            },
-          ),*/
         ],
       ),
-
 
       
       floatingActionButton: Container(
@@ -339,22 +350,18 @@ StreamBuilder<List<Todo>>(
           backgroundColor: Colors.transparent,
           elevation: 0.0,
           child: const Icon(Iconsax.add, color: Colors.white,)
-          // SvgPicture.asset(
-          //   "assets/icons/document.svg",
-          //   color: Colors.white,
-          //   height: 30,
-          //   width: 30,
-          // ),
         ),
       ),
     ));
   }
 
 void _showEditTodoBottomSheet(BuildContext context, Todo todo) {
+  _todoNameController.text = todo.title;
+  _todoDescController.text = todo.description;
+
   showModalBottomSheet(
     context: context,
     builder: (context) {
-      
       return Container(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -377,7 +384,7 @@ void _showEditTodoBottomSheet(BuildContext context, Todo todo) {
             ),
             SizedBox(height: 8),
             TextField(
-              controller: _todoDescriptionController,
+              controller: _todoDescController,
               decoration: InputDecoration(
                 labelText: 'Description',
                 hintText: 'Entrez la description de la tâche',
@@ -385,16 +392,20 @@ void _showEditTodoBottomSheet(BuildContext context, Todo todo) {
             ),
             SizedBox(height: 16),
             ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xff3B999B),
+                ),
               onPressed: () {
+                
                 // Appeler la méthode de mise à jour de la tâche dans DatabaseService
                 DatabaseService().updateTodo(
                   todo.uid,
                   name: _todoNameController.text,
-                  description: _todoDescriptionController.text,
+                  description: _todoDescController.text,
                 );
                 Navigator.pop(context); // Fermer la bottom sheet
               },
-              child: Text('Enregistrer'),
+              child: Text('Modifier'),
             ),
           ],
         ),
@@ -404,8 +415,63 @@ void _showEditTodoBottomSheet(BuildContext context, Todo todo) {
 }
 
 
+
+// void _showEditTodoBottomSheet(BuildContext context, Todo todo) {
+//   showModalBottomSheet(
+//     context: context,
+//     builder: (context) {
+      
+//       return Container(
+//         padding: const EdgeInsets.all(16),
+//         child: Column(
+//           mainAxisSize: MainAxisSize.min,
+//           children: [
+//             Text(
+//               'Modifier la tâche',
+//               style: TextStyle(
+//                 fontSize: 20,
+//                 fontWeight: FontWeight.bold,
+//               ),
+//             ),
+//             SizedBox(height: 16),
+//             TextField(
+//               controller: _todoNameController,
+//               decoration: InputDecoration(
+//                 labelText: 'Nom',
+//                 hintText: 'Entrez le nom de la tâche',
+//               ),
+//             ),
+//             SizedBox(height: 8),
+//             TextField(
+//               controller: _todoDescriptionController,
+//               decoration: InputDecoration(
+//                 labelText: 'Description',
+//                 hintText: 'Entrez la description de la tâche',
+//               ),
+//             ),
+//             SizedBox(height: 16),
+//             ElevatedButton(
+//               onPressed: () {
+//                 // Appeler la méthode de mise à jour de la tâche dans DatabaseService
+//                 DatabaseService().updateTodo(
+//                   todo.uid,
+//                   name: _todoNameController.text,
+//                   description: _todoDescriptionController.text,
+//                 );
+//                 Navigator.pop(context); // Fermer la bottom sheet
+//               },
+//               child: Text('Modifier'),
+//             ),
+//           ],
+//         ),
+//       );
+//     },
+//   );
+// }
+
+
 void _fModalBottomSheet() {
-   DateTime startDate = DateTime.now();
+  
   DateTime endDate = DateTime.now();
    // Liste des catégories existantes
   String selectedCategory = "tout"; // Catégorie sélectionnée
@@ -562,51 +628,32 @@ GestureDetector(
                   ),
 
                    Container(
-          height: 50,
-          width: MediaQuery.of(context).size.width,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(5),
-          ),
-          child: InkWell(
-            onTap: () async {
-              final selectedDate = await showDatePicker(
-                context: context,
-                initialDate: startDate,
-                firstDate: DateTime(2023),
-                lastDate: DateTime(2026),
-              );
-
-              if (selectedDate != null) {
-                setState(() {
-                  startDate = selectedDate;
-                  _todoStartDateController.text =
-                      DateFormat('yyyy-MM-dd').format(startDate);
-                });
-              }
-            },
-            child: IgnorePointer(
-              child: TextField(
-                controller: _todoStartDateController,
-                style: const TextStyle(
-                  color: Colors.black,
-                  fontSize: 20,
-                ),
-                decoration: InputDecoration(
-                  hintText: "Date de début",
-                  floatingLabelBehavior: FloatingLabelBehavior.never,
-                  filled: true,
-                  fillColor: const Color(0xff50C4ED).withOpacity(0),
-                  isDense: true,
-                  border: OutlineInputBorder(
-                    borderSide: BorderSide.none,
-                    borderRadius: BorderRadius.circular(12),
+                    height: 50,
+                    width: MediaQuery.of(context).size.width,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(5),
+                    ),
+                    child: TextField(
+                      keyboardType:TextInputType.emailAddress,
+                      controller: _todoPartController,
+                      style: const TextStyle(
+                        color: Colors.black,
+                        fontSize: 20,
+                      ),
+                      decoration: InputDecoration(
+                        hintText: "Ajouter un participant",
+                        floatingLabelBehavior: FloatingLabelBehavior.never,
+                        filled: true,
+                        fillColor: const Color(0xff50C4ED).withOpacity(0),
+                        isDense: true,
+                        border: OutlineInputBorder(
+                          borderSide: BorderSide.none,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    ),
                   ),
-                ),
-              ),
-            ),
-          ),
-        ),
 
                   const SizedBox(
                     height: 20,
@@ -625,14 +672,14 @@ GestureDetector(
                 context: context,
                 initialDate: endDate,
                 firstDate: DateTime(2023),
-                lastDate: DateTime(2026),
+                lastDate: DateTime(2030),
               );
 
               if (selectedDate != null) {
                 setState(() {
                   endDate = selectedDate;
                   _todoEndDateController.text =
-                      DateFormat('yyyy-MM-dd').format(endDate);
+                      DateFormat('dd-MM-yyyy').format(endDate);
                 });
               }
             },
@@ -661,16 +708,6 @@ GestureDetector(
                   const SizedBox(
                     height: 20,
                   ),
-                  // Champ pour sélectionner une photo de la galerie
-                  // ElevatedButton(
-                  //   onPressed: () {
-                  //     _selectPhotoFromGallery();
-                  //   },
-                  //   child: const Text("Sélectionner une photo"),
-                  // style:ElevatedButton.styleFrom(
-                  //   backgroundColor: const Color(0xff3B999B),
-                  // )
-                  // ),
 
                   Container(
               height: 50,
@@ -734,29 +771,32 @@ GestureDetector(
                         try {
                           if (_todoNameController.text.isNotEmpty &&
       _todoDescController.text.isNotEmpty &&
-      _todoStartDateController.text.isNotEmpty &&
       _todoEndDateController.text.isNotEmpty) {
    
     
       String photoUrl = await _uploadPhoto(photoFile!);
-      print(photoUrl);
       String categoryID = selectedCategory;
+      String date = '${DateTime.now().day}-${DateTime.now().month}-${DateTime.now().year}';
+      String? user = FirebaseAuth.instance.currentUser?.email;
       await DatabaseService().createNewTodo(
         title: _todoNameController.text.trim(),
         description: _todoDescController.text.trim(),
-        startDate: _todoStartDateController.text,
         endDate: _todoEndDateController.text,
         photoPath: photoUrl,
         categoryID: categoryID,
+        userID: user,
+        startDate: date,
       );
+      _todoNameController.clear();
+      _todoDescController.clear();
+      _todoEndDateController.clear();
+      clearText();
+      // ignore: use_build_context_synchronously
       Navigator.pop(context);
       setState(() {
         photoFile = null;
       });
-                        _todoNameController.clear();
-                        _todoDescController.clear();
-                        _todoStartDateController.clear();
-                        _todoEndDateController.clear();
+                        
   }
                           setState(() {
                             circular = false;
