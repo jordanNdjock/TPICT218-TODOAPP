@@ -106,7 +106,7 @@ class _MyHomePageState extends State<MyHomePage> {
       // ),
 
       // Affichage de la page correspondant à l'index sélectionné
-      body: _pages[currentIndex],
+      body: SafeArea(child: _pages[currentIndex]),
 
       // Affichage de la barre de navigation en bas de l'écran
       bottomNavigationBar: BottomNavigationBar(

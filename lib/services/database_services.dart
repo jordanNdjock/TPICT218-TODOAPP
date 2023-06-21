@@ -3,16 +3,16 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:todo/models/task_model.dart';
 import 'package:todo/models/category_model.dart';
+import 'package:todo/models/user_model.dart';
 
 final databaseServiceProvider = Provider<DatabaseService>((ref) {
   return DatabaseService();
 });
 
 class DatabaseService {
-  CollectionReference todosCollection = FirebaseFirestore.instance.collection("Todo");
-  
-  
+  // Partie Todo
 
+  CollectionReference todosCollection = FirebaseFirestore.instance.collection("Todo");
   Future<DocumentReference> createNewTodo({
     required String title,
     required String description,
@@ -43,24 +43,39 @@ class DatabaseService {
     await todosCollection.doc(uid).update({"status": TodoStatus.completed.toString().split('.').last});
   }
 
-  Future<void> removeTodo(String uid) async {
-    await todosCollection.doc(uid).delete();
+ Future<void> removeTodo(String uid) async {
+  await todosCollection.doc(uid).delete();
+}
+
+Future<void> updateTodo(String uid, {String? name, String? description, required String endDate, required String categoryID, required String participant, String? photo}) async {
+  DocumentReference todoRef = todosCollection.doc(uid);
+
+  // Créer un map contenant les données à mettre à jour
+  Map<String, dynamic> updatedData = {};
+  if (name != null) {
+    updatedData['title'] = name;
+  }
+  if (description != null) {
+    updatedData['description'] = description;
+  }
+  if (endDate.isNotEmpty) {
+    updatedData['endDate'] = endDate;
+  }
+  if (categoryID.isNotEmpty) {
+    updatedData['categoryID'] = categoryID;
+  }
+  if (participant.isNotEmpty) {
+    updatedData['participant'] = participant;
+  }
+  // Vérifier si une nouvelle photo a été fournie
+  if (photo != null) {
+    String photoUrl = photo;
+    updatedData['photoUrl'] = photoUrl;
   }
 
-  Future<void> updateTodo(String uid, {String? name, String? description}) async {
-    DocumentReference todoRef = todosCollection.doc(uid);
+  await todoRef.update(updatedData);
+}
 
-    // Créer un map contenant les données à mettre à jour
-    Map<String, dynamic> updatedData = {};
-    if (name != null) {
-      updatedData['title'] = name;
-    }
-    if (description != null) {
-      updatedData['description'] = description;
-    }
-
-    await todoRef.update(updatedData);
-  }
 
   List<Todo> todoFromFirestore(QuerySnapshot snapshot) {
   return snapshot.docs.map((e) {
@@ -89,14 +104,23 @@ String getCurrentUserID() {
   }
 }
 
-  Stream<List<Todo>> listUserTodos() {
+ Stream<List<Todo>> listUserTodos() {
   String currentUserID = getCurrentUserID();
 
   return todosCollection
       .where('userID', isEqualTo: currentUserID)
       .snapshots()
-      .map(todoFromFirestore);
+      .map(todoFromFirestore)
+      .asyncExpand((userTodos) {
+        // Récupérer les tâches dans lesquelles l'utilisateur connecté est participant
+        return todosCollection
+            .where('participants', arrayContains: currentUserID)
+            .snapshots()
+            .map(todoFromFirestore)
+            .map((participantTodos) => userTodos + participantTodos);
+      });
 }
+
 
   TodoStatus _getStatusFromString(String status) {
     switch (status) {
@@ -176,7 +200,7 @@ Future<void> createCategory({required String userId, required String name, requi
       .collection('users')
       .doc(userId)
       .collection('categories').doc(categoryID).update({
-      "name": name,
+      "title": name,
       "description": description,
     });
   }
@@ -193,7 +217,7 @@ Future<void> createCategory({required String userId, required String name, requi
       Map<String, dynamic> data = e.data() as Map<String, dynamic>;
       return Category(
         categoryID: e.id,
-        title: data["name"],
+        title: data["title"],
         description: data["description"],
       );
     }).toList();
@@ -230,6 +254,23 @@ Future<void> createDefaultCategories(String userId) async {
         .add(categoryData);
   }
 }
+Stream<List<Category>> streamCategories(String userId) {
+  return FirebaseFirestore.instance
+      .collection('users')
+      .doc(userId)
+      .collection('categories')
+      .snapshots()
+      .map((snapshot) {
+    return snapshot.docs.map((doc) {
+      Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+      return Category(
+        categoryID: doc.id,
+        title: data['title'],
+        description: data['description'],
+      );
+    }).toList();
+  });
+}
 
 
 Future<List<Category>> getCategories(String userId) async {
@@ -256,6 +297,39 @@ Future<List<Category>> getCategories(String userId) async {
 
   return categories;
 }
+
+
+// Partie User
+
+Future<List<Users>> getUsers() async {
+  List<Users> userList = [];
+
+  try {
+    String currentUserID = FirebaseAuth.instance.currentUser!.email!;
+    QuerySnapshot querySnapshot = await FirebaseFirestore.instance
+        .collection('users')
+        .get();
+
+    for (QueryDocumentSnapshot documentSnapshot in querySnapshot.docs) {
+      Map<String, dynamic> data = documentSnapshot.data() as  Map<String, dynamic>;
+      String userID = data['email'];
+      String username = data['nom'];
+
+      // Vérifie si l'utilisateur courant est différent de l'utilisateur actuel
+      if (userID != currentUserID) {
+        Users user = Users(userID: userID, username: username);
+        userList.add(user);
+      }
+    }
+  } catch (e) {
+    print('Error getting users: $e');
+  }
+
+  return userList;
+}
+
+
+
 
 }
 

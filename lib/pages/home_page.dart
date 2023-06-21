@@ -8,6 +8,7 @@ import 'package:todo/models/task_model.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:todo/models/category_model.dart';
+import 'package:todo/models/user_model.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'dart:async';
 import 'dart:io';
@@ -88,8 +89,7 @@ double calculatePercentage(
       String startStr, String endStr, String currentStr) {
     DateFormat formatter = DateFormat('dd-MM-yyyy');
     DateTime start = formatter.parse(startStr);
-    DateFormat format = DateFormat('dd-MM-yyyy');
-    DateTime end = format.parse(endStr);
+    DateTime end = formatter.parse(endStr);
     DateTime current = DateTime.parse(currentStr);
 
     if (current.isBefore(start)) {
@@ -178,14 +178,20 @@ StreamBuilder<List<Todo>>(
 
     return Container(
       constraints: BoxConstraints(maxHeight: 600),
+
+      child: SafeArea(
       child: SingleChildScrollView(
+         child: Scrollbar(
+          // thumbVisibility: true,
+          // thickness: 6,
+          // radius: const Radius.circular(3),
         child: ListView.separated(
           separatorBuilder: (context, index) => Divider(
             color: Colors.grey[800],
           ),
           itemCount: todos.length,
           shrinkWrap: true,
-          physics: NeverScrollableScrollPhysics(),
+          physics: const NeverScrollableScrollPhysics(),
           itemBuilder: (context, index) {
             Todo todo = todos[index];
             String status = todo.status.toString();
@@ -193,21 +199,16 @@ StreamBuilder<List<Todo>>(
             String now = DateTime.now().toString();
             double progress = calculatePercentage(todo.startDate, todo.endDate, now);
             Color progressColor;
-            
-            if (progress == 1.0) {
-              progressColor = Colors.red;
-              isComplete = true;
-            } else if (progress >= 0.75 && progress < 1.0) {
-              isComplete = false;
+             if (progress >= 0.75) {
               progressColor = Colors.red;
             } else if (progress >= 0.5) {
               progressColor = Colors.purple;
-              isComplete = false;
-            } else {
-              progressColor = Colors.orange;
-              isComplete = false;
+            } else if(progress == 1.0){
+              progressColor = Colors.red;
             }
-
+            else {
+              progressColor = Colors.orange;
+            }
             return Dismissible(
               key: Key(todo.uid),
               background: Container(
@@ -225,8 +226,36 @@ StreamBuilder<List<Todo>>(
                   await DatabaseService().removeTodo(todo.uid);
                 }
               },
-              child: Container(
-                height: 113,
+              child: GestureDetector( // Ajoutez un GestureDetector ici
+     onTap: () async {
+    bool confirmAction = await showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Confirmation'),
+          content: isComplete
+              ? Text('Voulez-vous marquer cette tâche comme "non complétée" ?')
+              : Text('Voulez-vous marquer cette tâche comme "complétée" ?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: Text('Annuler'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: Text(isComplete ? 'Marquer comme non complétée' : 'Marquer comme complétée'),
+            ),
+          ],
+        );
+      },
+    );
+    if (confirmAction) {
+      String newStatus = isComplete ? TodoStatus.inProgress.toString().split('.').last : TodoStatus.completed.toString().split('.').last;
+      DatabaseService().updateTodoStatus(todo.uid, newStatus);
+    }
+  },
+              child :Container(
+               
                 width: MediaQuery.of(context).size.width,
                 margin: const EdgeInsets.symmetric(horizontal: 10),
                 decoration: BoxDecoration(
@@ -234,10 +263,7 @@ StreamBuilder<List<Todo>>(
                   borderRadius: BorderRadius.circular(5),
                 ),
                 child: ListTile(
-                  onTap: () {
-                    String newStatus = isComplete ? TodoStatus.inProgress.toString().split('.').last : TodoStatus.completed.toString().split('.').last;
-                    DatabaseService().updateTodoStatus(todo.uid, newStatus);
-                  },
+                  
                   leading: CircleAvatar(
                     backgroundImage: NetworkImage(todo.photoUrl),
                   ),
@@ -255,7 +281,7 @@ StreamBuilder<List<Todo>>(
                       Text(
                         todo.description,
                         style: const TextStyle(
-                          fontSize: 16,
+                          fontSize: 15,
                           color: Colors.black87,
                         ),
                       ),
@@ -272,7 +298,7 @@ StreamBuilder<List<Todo>>(
                           return Text(
                             'Categorie: ${category.title}',
                             style: TextStyle(
-                              fontSize: 16,
+                              fontSize: 14,
                               color: Colors.black54,
                             ),
                           );
@@ -286,12 +312,20 @@ StreamBuilder<List<Todo>>(
                         ),
                       ),
                       Text(
+                        'Date de debut: ${todo.startDate}',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.black54,
+                        ),
+                      ),
+                      Text(
                         'Date de fin: ${todo.endDate}',
                         style: TextStyle(
                           fontSize: 14,
                           color: Colors.black54,
                         ),
                       ),
+                      SizedBox(height:05,),
                       AnimatedContainer(
                         duration: Duration(seconds: 1),
                         height: 05,
@@ -301,7 +335,7 @@ StreamBuilder<List<Todo>>(
                             colors: [
                               Colors.orange,
                               Colors.purple,
-                              Colors.transparent,
+                              Colors.white,
                             ],
                             stops: [
                               0.0,
@@ -326,9 +360,12 @@ StreamBuilder<List<Todo>>(
                   ),
                 ),
               ),
+            ),
             );
           },
         ),
+         ),
+      ),
       ),
     );
   },
@@ -355,60 +392,183 @@ StreamBuilder<List<Todo>>(
     ));
   }
 
+
+
+
+
 void _showEditTodoBottomSheet(BuildContext context, Todo todo) {
   _todoNameController.text = todo.title;
   _todoDescController.text = todo.description;
+  _todoEndDateController.text = todo.endDate;
+  var selectedCategory = todo.categoryID;
+  _todoPartController.text = todo.participants.join(",");
+  File? newPhotoFile;
+  File? currentPhotoFile;
 
   showModalBottomSheet(
     context: context,
     builder: (context) {
-      return Container(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              'Modifier la tâche',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            SizedBox(height: 16),
-            TextField(
-              controller: _todoNameController,
-              decoration: InputDecoration(
-                labelText: 'Nom',
-                hintText: 'Entrez le nom de la tâche',
-              ),
-            ),
-            SizedBox(height: 8),
-            TextField(
-              controller: _todoDescController,
-              decoration: InputDecoration(
-                labelText: 'Description',
-                hintText: 'Entrez la description de la tâche',
-              ),
-            ),
-            SizedBox(height: 16),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xff3B999B),
+      return StatefulBuilder(
+        builder: (BuildContext context, StateSetter setState) {
+          return SingleChildScrollView(
+
+          child : Container(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Modifier la tâche',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
-              onPressed: () {
-                
-                // Appeler la méthode de mise à jour de la tâche dans DatabaseService
-                DatabaseService().updateTodo(
-                  todo.uid,
-                  name: _todoNameController.text,
-                  description: _todoDescController.text,
-                );
-                Navigator.pop(context); // Fermer la bottom sheet
-              },
-              child: Text('Modifier'),
+                SizedBox(height: 16),
+                GestureDetector(
+                  onTap: () async {
+                    final imagePicker = ImagePicker();
+                    final pickedImage =
+                        await imagePicker.pickImage(source: ImageSource.gallery);
+                    if (pickedImage != null) {
+                      setState(() {
+                        newPhotoFile = File(pickedImage.path);
+                      });
+                    }
+                  },
+                  child: Container(
+                    color: Colors.grey.shade300,
+                    height: 150,
+                    width: double.infinity,
+                    child: Align(
+                      alignment: Alignment.center,
+                      child: FractionallySizedBox(
+                        widthFactor: 0.5,
+                        child: Stack(
+                          alignment: Alignment.center,
+                          children: [
+                             CircleAvatar(
+              radius: 50,
+              backgroundColor: Colors.white,
+              backgroundImage: (newPhotoFile != null)
+      ? FileImage(newPhotoFile!)
+      : (currentPhotoFile != null)
+          ? FileImage(currentPhotoFile)
+          // : (todo.photoUrl != null)
+          //     ? Image.network(todo.photoUrl)
+              : null,
+              child: (newPhotoFile == null && currentPhotoFile == null && todo.photoUrl == null)
+                  ? const Icon(
+                      Icons.person,
+                      size: 50,
+                      color: Colors.grey,
+                    )
+                  : null,
             ),
-          ],
-        ),
+                            (newPhotoFile != null || currentPhotoFile != null)
+                                ? Positioned(
+                                    top: 0,
+                                    right: 0,
+                                    child: CircleAvatar(
+                                      radius: 14,
+                                      backgroundColor: Colors.white,
+                                      child: IconButton(
+                                        icon: Icon(
+                                          Icons.close,
+                                          size: 12,
+                                          color: Colors.black,
+                                        ),
+                                        onPressed: () {
+                                          setState(() {
+                                            newPhotoFile = null;
+                                          });
+                                        },
+                                      ),
+                                    ),
+                                  )
+                                : SizedBox(),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                SizedBox(height: 8),
+                TextField(
+                  controller: _todoNameController,
+                  decoration: InputDecoration(
+                    labelText: 'Nom',
+                    hintText: 'Entrez le nom de la tâche',
+                  ),
+                ),
+                SizedBox(height: 8),
+                TextField(
+                  controller: _todoDescController,
+                  decoration: InputDecoration(
+                    labelText: 'Description',
+                    hintText: 'Entrez la description de la tâche',
+                  ),
+                ),
+                SizedBox(height: 8),
+                TextField(
+                  controller: _todoPartController,
+                  decoration: InputDecoration(
+                    labelText: 'Participant',
+                    hintText: 'Entrez le nom du participant',
+                  ),
+                ),
+                SizedBox(height: 8),
+                TextField(
+                  controller: _todoEndDateController,
+                  decoration: InputDecoration(
+                    labelText: 'Date de fin',
+                    hintText: 'Entrez la date de fin de la tâche',
+                  ),
+                ),
+                SizedBox(height: 8),
+                DropdownButtonFormField<String>(
+                  value: selectedCategory,
+                  onChanged: (value) {
+                    setState(() {
+                      selectedCategory = value!;
+                    });
+                  },
+                  items: categories.map((category) {
+                    return DropdownMenuItem<String>(
+                      value: category.categoryID,
+                      child: Text(category.title),
+                    );
+                  }).toList(),
+                  decoration: InputDecoration(
+                    labelText: 'Catégorie',
+                    hintText: 'Sélectionnez une catégorie',
+                  ),
+                ),
+                SizedBox(height: 16),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xff3B999B),
+                  ),
+                  onPressed: () async {
+                    // Appeler la méthode de mise à jour de la tâche dans DatabaseService
+                    DatabaseService().updateTodo(
+                      todo.uid,
+                      name: _todoNameController.text,
+                      description: _todoDescController.text,
+                      endDate: _todoEndDateController.text,
+                      categoryID: selectedCategory,
+                      participant: _todoPartController.text,
+                      photo: await _uploadPhoto(newPhotoFile!),
+                    );
+                    Navigator.pop(context); // Fermer la bottom sheet
+                  },
+                  child: Text('Modifier'),
+                ),
+              ],
+            ),
+          ),
+          );
+        },
       );
     },
   );
@@ -416,65 +576,26 @@ void _showEditTodoBottomSheet(BuildContext context, Todo todo) {
 
 
 
-// void _showEditTodoBottomSheet(BuildContext context, Todo todo) {
-//   showModalBottomSheet(
-//     context: context,
-//     builder: (context) {
-      
-//       return Container(
-//         padding: const EdgeInsets.all(16),
-//         child: Column(
-//           mainAxisSize: MainAxisSize.min,
-//           children: [
-//             Text(
-//               'Modifier la tâche',
-//               style: TextStyle(
-//                 fontSize: 20,
-//                 fontWeight: FontWeight.bold,
-//               ),
-//             ),
-//             SizedBox(height: 16),
-//             TextField(
-//               controller: _todoNameController,
-//               decoration: InputDecoration(
-//                 labelText: 'Nom',
-//                 hintText: 'Entrez le nom de la tâche',
-//               ),
-//             ),
-//             SizedBox(height: 8),
-//             TextField(
-//               controller: _todoDescriptionController,
-//               decoration: InputDecoration(
-//                 labelText: 'Description',
-//                 hintText: 'Entrez la description de la tâche',
-//               ),
-//             ),
-//             SizedBox(height: 16),
-//             ElevatedButton(
-//               onPressed: () {
-//                 // Appeler la méthode de mise à jour de la tâche dans DatabaseService
-//                 DatabaseService().updateTodo(
-//                   todo.uid,
-//                   name: _todoNameController.text,
-//                   description: _todoDescriptionController.text,
-//                 );
-//                 Navigator.pop(context); // Fermer la bottom sheet
-//               },
-//               child: Text('Modifier'),
-//             ),
-//           ],
-//         ),
-//       );
-//     },
-//   );
-// }
+
+
+// Modal de creation de la todo
 
 
 void _fModalBottomSheet() {
   
   DateTime endDate = DateTime.now();
    // Liste des catégories existantes
-  String selectedCategory = "tout"; // Catégorie sélectionnée
+  String selectedCategory = ''; // Catégorie sélectionnée
+
+List<Users> userList = []; // Liste des utilisateurs
+  List<String> selectedParticipants = []; // Participants sélectionnés
+
+  void getUsers() async {
+    userList = await DatabaseService().getUsers();
+  }
+
+  getUsers();
+
   showModalBottomSheet(
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.only(
@@ -533,6 +654,7 @@ GestureDetector(
       });
     }
   },
+  
   child: Container(
     color: Colors.grey.shade300,
     height: 150,
@@ -627,34 +749,40 @@ GestureDetector(
                     height: 20,
                   ),
 
-                   Container(
-                    height: 50,
-                    width: MediaQuery.of(context).size.width,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(5),
-                    ),
-                    child: TextField(
-                      keyboardType:TextInputType.emailAddress,
-                      controller: _todoPartController,
-                      style: const TextStyle(
-                        color: Colors.black,
-                        fontSize: 20,
+ Container(
+                      height: 50,
+                      width: MediaQuery.of(context).size.width,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(5),
                       ),
-                      decoration: InputDecoration(
-                        hintText: "Ajouter un participant",
-                        floatingLabelBehavior: FloatingLabelBehavior.never,
-                        filled: true,
-                        fillColor: const Color(0xff50C4ED).withOpacity(0),
-                        isDense: true,
-                        border: OutlineInputBorder(
-                          borderSide: BorderSide.none,
-                          borderRadius: BorderRadius.circular(12),
+                      child: DropdownButtonFormField<String>(
+                        value: null,
+                        onChanged: (value) {
+                          setState(() {
+                            selectedParticipants.add(value!);
+                          });
+                        },
+                        items: userList.map((user) {
+                          return DropdownMenuItem<String>(
+                            value: user.userID,
+                            child: Text(user.username),
+                          );
+                        }).toList(),
+                        decoration: InputDecoration(
+                          hintText: "Sélectionner des participants",
+                          floatingLabelBehavior: FloatingLabelBehavior.never,
+                          filled: true,
+                          fillColor: const Color(0xff50C4ED).withOpacity(0),
+                          isDense: true,
+                          border: OutlineInputBorder(
+                            borderSide: BorderSide.none,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
                         ),
                       ),
                     ),
-                  ),
-
+ 
                   const SizedBox(
                     height: 20,
                   ),
@@ -717,36 +845,31 @@ GestureDetector(
                 borderRadius: BorderRadius.circular(5),
               ),
               child: DropdownButtonFormField<String>(
-                value: selectedCategory,
-                onChanged: (value) {
-                  setState(() {
-                    selectedCategory = value!;
-                  });
-                },
-                items:  [
-                      const DropdownMenuItem<String>(
-                        value: 'tout',
-                        child: Text('Tout'),
-                      ),
-                      ...categories.map((category) {
-                        return DropdownMenuItem<String>(
-                          value: category.categoryID,
-                          child: Text(category.title),
-                        );
-                      }).toList(),
-                    ],
-                decoration: InputDecoration(
-                  hintText: "Sélectionner une catégorie",
-                  floatingLabelBehavior: FloatingLabelBehavior.never,
-                  filled: true,
-                  fillColor: const Color(0xff50C4ED).withOpacity(0),
-                  isDense: true,
-                  border: OutlineInputBorder(
-                    borderSide: BorderSide.none,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-              ),
+  value: categories[0].categoryID,
+  onChanged: (value) {
+    setState(() {
+      selectedCategory = value!;
+    });
+  },
+  items: categories.map((category) {
+    return DropdownMenuItem<String>(
+      value: category.categoryID,
+      child: Text(category.title),
+    );
+  }).toList(),
+  decoration: InputDecoration(
+    hintText: "Sélectionner une catégorie",
+    floatingLabelBehavior: FloatingLabelBehavior.never,
+    filled: true,
+    fillColor: const Color(0xff50C4ED).withOpacity(0),
+    isDense: true,
+    border: OutlineInputBorder(
+      borderSide: BorderSide.none,
+      borderRadius: BorderRadius.circular(12),
+    ),
+  ),
+),
+
             ),
 
                   const SizedBox(
@@ -776,13 +899,15 @@ GestureDetector(
     
       String photoUrl = await _uploadPhoto(photoFile!);
       String categoryID = selectedCategory;
-      String date = '${DateTime.now().day}-${DateTime.now().month}-${DateTime.now().year}';
+      String date = '${DateTime.now().day}-${DateTime.now().month.toString().padLeft(2, '0')}-${DateTime.now().year}';
       String? user = FirebaseAuth.instance.currentUser?.email;
+      List<String> participants = selectedParticipants;
       await DatabaseService().createNewTodo(
         title: _todoNameController.text.trim(),
         description: _todoDescController.text.trim(),
         endDate: _todoEndDateController.text,
         photoPath: photoUrl,
+        participants: participants,
         categoryID: categoryID,
         userID: user,
         startDate: date,
@@ -830,6 +955,11 @@ GestureDetector(
     },
   );
 }
+
+
+
+
+
 
 // Méthode pour sélectionner une photo de la galerie
 void _selectPhotoFromGallery() async {
