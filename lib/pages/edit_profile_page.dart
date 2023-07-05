@@ -1,4 +1,3 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:todo/model/user.dart';
 import 'package:todo/utils/user_preferences.dart';

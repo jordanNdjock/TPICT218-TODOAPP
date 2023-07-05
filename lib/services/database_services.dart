@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:todo/models/task_model.dart';
 import 'package:todo/models/category_model.dart';
 import 'package:todo/models/user_model.dart';
-
+import 'dart:async';
 final databaseServiceProvider = Provider<DatabaseService>((ref) {
   return DatabaseService();
 });
@@ -13,6 +13,7 @@ class DatabaseService {
   // Partie Todo
 
   CollectionReference todosCollection = FirebaseFirestore.instance.collection("Todo");
+  CollectionReference usersCollection = FirebaseFirestore.instance.collection("users");
   Future<DocumentReference> createNewTodo({
     required String title,
     required String description,
@@ -47,15 +48,15 @@ class DatabaseService {
   await todosCollection.doc(uid).delete();
 }
 
-Future<void> updateTodo(String uid, {String? name, String? description, required String endDate, required String categoryID, required String participant, String? photo}) async {
+Future<void> updateTodo(String uid, {required String name, required String description, required String endDate, required String categoryID, required String participant, String? photo}) async {
   DocumentReference todoRef = todosCollection.doc(uid);
 
   // Créer un map contenant les données à mettre à jour
   Map<String, dynamic> updatedData = {};
-  if (name != null) {
+  if (name.isNotEmpty) {
     updatedData['title'] = name;
   }
-  if (description != null) {
+  if (description.isNotEmpty) {
     updatedData['description'] = description;
   }
   if (endDate.isNotEmpty) {
@@ -104,22 +105,80 @@ String getCurrentUserID() {
   }
 }
 
- Stream<List<Todo>> listUserTodos() {
+Future<String> getUserName(String userID) async {
+  try {
+    DocumentSnapshot userSnapshot = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(userID)
+        .get();
+
+    if (userSnapshot.exists) {
+      Map<String, dynamic> userData = userSnapshot.data() as Map<String, dynamic>;
+      String username = userData['nom'];
+      return username;
+    } else {
+      return 'Utilisateur non trouvé';
+    }
+  } catch (e) {
+    print('Erreur lors de la récupération du nom de l\'utilisateur : $e');
+    return 'Erreur lors de la récupération du nom de l\'utilisateur';
+  }
+}
+
+
+
+// ... Liste des todo
+Stream<List<Todo>> listUserTodos() {
   String currentUserID = getCurrentUserID();
 
-  return todosCollection
+  Stream<List<Todo>> userTodosStream = todosCollection
       .where('userID', isEqualTo: currentUserID)
       .snapshots()
-      .map(todoFromFirestore)
-      .asyncExpand((userTodos) {
-        // Récupérer les tâches dans lesquelles l'utilisateur connecté est participant
-        return todosCollection
-            .where('participants', arrayContains: currentUserID)
-            .snapshots()
-            .map(todoFromFirestore)
-            .map((participantTodos) => userTodos + participantTodos);
-      });
+      .map(todoFromFirestore);
+
+  Stream<List<Todo>> participantTodosStream = todosCollection
+      .where('participants', arrayContains: currentUserID)
+      .snapshots()
+      .map(todoFromFirestore);
+
+  StreamController<List<Todo>> controller = StreamController<List<Todo>>();
+
+  List<Todo> userTodos = [];
+  List<Todo> participantTodos = [];
+
+  StreamSubscription<List<Todo>> userSubscription;
+  StreamSubscription<List<Todo>>? participantSubscription;
+
+  void updateTodos() {
+    List<Todo> mergedTodos = userTodos + participantTodos;
+    controller.add(mergedTodos);
+  }
+
+  userSubscription = userTodosStream.listen((todos) {
+    userTodos = todos;
+    updateTodos();
+  }, onError: (error) {
+    controller.addError(error);
+  }, onDone: () {
+    participantSubscription?.cancel();
+    controller.close();
+  });
+
+  participantSubscription = participantTodosStream.listen((todos) {
+    participantTodos = todos;
+    updateTodos();
+  }, onError: (error) {
+    controller.addError(error);
+  }, onDone: () {
+    userSubscription.cancel();
+    controller.close();
+  });
+
+  return controller.stream;
 }
+
+
+
 
 
   TodoStatus _getStatusFromString(String status) {
@@ -297,6 +356,66 @@ Future<List<Category>> getCategories(String userId) async {
 
   return categories;
 }
+
+Future<String?> VerifgetCategoryByName(String userID, String categoryID) async {
+  CollectionReference userCategoriesCollection =
+      usersCollection.doc(getCurrentUserID()).collection('categories');
+
+  QuerySnapshot snapshot = await userCategoriesCollection.get();
+
+  for (DocumentSnapshot doc in snapshot.docs) {
+    Map<String, dynamic> categoryData = doc.data() as Map<String, dynamic>;
+    if (doc.id == categoryID) {
+      String categoryName = categoryData['title'];
+      return categoryName;
+    }
+  }
+
+
+    CollectionReference categoriesCollection =
+      usersCollection.doc(userID).collection('categories');
+
+  QuerySnapshot snapshotM = await categoriesCollection.get();
+
+  for (DocumentSnapshot doc in snapshotM.docs) {
+    Map<String, dynamic> categoryData = doc.data() as Map<String, dynamic>;
+    if (doc.id == categoryID) {
+      String categoryName = categoryData['title'];
+      return categoryName;
+    }
+  }
+  
+  
+
+  // Si la catégorie n'est pas trouvée dans les catégories de l'utilisateur
+  // ou si l'utilisateur n'existe pas, renvoyer null
+  return null;
+}
+
+
+
+Future<String?> getCategoryByName(String userID, String categoryID) async {
+  CollectionReference userCategoriesCollection =
+      usersCollection.doc(userID).collection('categories');
+
+  QuerySnapshot snapshot = await userCategoriesCollection.get();
+
+  for (DocumentSnapshot doc in snapshot.docs) {
+    Map<String, dynamic> categoryData = doc.data() as Map<String, dynamic>;
+    if (doc.id == categoryID) {
+      String categoryName = categoryData['title'];
+      return categoryName;
+    }
+  }
+
+  // Si la catégorie n'est pas trouvée dans les catégories de l'utilisateur
+  // ou si l'utilisateur n'existe pas, renvoyer null
+  return null;
+}
+
+
+
+
 
 
 // Partie User

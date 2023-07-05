@@ -27,6 +27,7 @@ class _HomePageState extends State<HomePage> {
 void initState() {
   super.initState();
   _loadCategories();
+  _clearText();
 }
 
 List<Category> categories = []; // Liste des catégories existantes
@@ -65,13 +66,16 @@ Future<void> _loadCategories() async {
   final TextEditingController _todoNameController = TextEditingController();
   final TextEditingController _todoDescController = TextEditingController();
   final  TextEditingController _todoEndDateController =  TextEditingController();
+  final TextEditingController _todoNameModifController = TextEditingController();
+  final TextEditingController _todoDescModifController = TextEditingController();
+  final  TextEditingController _todoEndDateModifController =  TextEditingController();
   final  TextEditingController _todoPartController =  TextEditingController();
  
   File? photoFile;
   bool isComplet = false;
   bool circular = false;
 
-  void clearText() {
+  void _clearText() {
     _todoNameController.clear();
      _todoDescController.clear();
      _todoEndDateController.clear();
@@ -87,6 +91,7 @@ Future<void> _loadCategories() async {
   }
 double calculatePercentage(
       String startStr, String endStr, String currentStr) {
+
     DateFormat formatter = DateFormat('dd-MM-yyyy');
     DateTime start = formatter.parse(startStr);
     DateTime end = formatter.parse(endStr);
@@ -134,8 +139,9 @@ double calculatePercentage(
       
     
       
-      
-      Column(
+      SingleChildScrollView(
+       
+      child : Column(
         children: [
           const SizedBox(
             height: 30,
@@ -285,32 +291,73 @@ StreamBuilder<List<Todo>>(
                           color: Colors.black87,
                         ),
                       ),
+                     
                       FutureBuilder<Category?>(
-                        future: DatabaseService().getCategoryById(todo.categoryID),
-                        builder: (context, snapshot) {
-                          if (snapshot.connectionState == ConnectionState.waiting) {
-                            return SizedBox();
-                          }
-                          if (!snapshot.hasData) {
-                            return Text('Category not found', style: TextStyle(color: Colors.grey[400]));
-                          }
+                            future: DatabaseService().getCategoryById(todo.categoryID),
+                            builder: (context, snapshot) {
+                              if (snapshot.connectionState == ConnectionState.waiting) {
+                                return SizedBox();
+                              }
+
+                              if (!snapshot.hasData || snapshot.data == null) {
+                                return FutureBuilder<String?>(
+                                  future: DatabaseService().getCategoryByName(todo.userID,todo.categoryID),
+                                  builder: (context, snapshot) {
+                                    if (snapshot.connectionState == ConnectionState.waiting) {
+                                      return SizedBox();
+                                    }
+                                    if (!snapshot.hasData || snapshot.data == null) {
+                                      return Text(
+                                        'Categorie non trouvée ou supprimée',
+                                        style: TextStyle(color: Colors.grey[400], fontSize: 14),
+                                      );
+                                    }
+
+                                    String categoryName = snapshot.data!;
+                                    return Text(
+                                      'Categorie: $categoryName',
+                                      style: TextStyle(fontSize: 14, color: Colors.black54),
+                                    );
+                                  },
+                                );
+                              }
+
                           Category? category = snapshot.data!;
                           return Text(
                             'Categorie: ${category.title}',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.black54,
-                            ),
+                            style: TextStyle(fontSize: 14, color: Colors.black54),
                           );
                         },
                       ),
-                      Text(
-                        'Participants: ${todo.participants.join(", ")}',
-                        style: TextStyle(
+
+
+                    FutureBuilder<List<String>>(
+                         future:  Future.wait(todo.participants.map((participantID) async {
+                                if (participantID == DatabaseService().getCurrentUserID()) {
+                                  return 'Moi';
+                                } else {
+                                  return await DatabaseService().getUserName(participantID);
+                                }
+                              })),
+                          builder: (context, snapshot) {
+                          if (snapshot.connectionState == ConnectionState.waiting) {
+                            return SizedBox();
+                          }
+                          if (snapshot.hasError) {
+                            return Text('Erreur : ${snapshot.error}');
+                          }
+                          if (!snapshot.hasData) {
+                            return Text('Aucun participant trouvé');
+                          }
+                          List<String> participantNames = snapshot.data!;
+                          return Text('Participants : ${participantNames.join(', ')}',
+                          style: TextStyle(
                           fontSize: 14,
                           color: Colors.black54,
                         ),
-                      ),
+                          );
+                              },
+                            ),
                       Text(
                         'Date de debut: ${todo.startDate}',
                         style: TextStyle(
@@ -373,6 +420,7 @@ StreamBuilder<List<Todo>>(
 
         ],
       ),
+      ),
 
       
       floatingActionButton: Container(
@@ -395,15 +443,25 @@ StreamBuilder<List<Todo>>(
 
 
 
+Future<void> _showEditTodoBottomSheet(BuildContext context, Todo todo) async {
+  _todoNameModifController.text = todo.title;
+  _todoDescModifController.text = todo.description;
+  _todoEndDateModifController.text = todo.endDate;
+  var selected = await DatabaseService().VerifgetCategoryByName(todo.userID,todo.categoryID);
+  var selectedCategory= todo.categoryID;
+List<String> participantNames = [];
+for (String participantID in todo.participants) {
+  if (participantID == DatabaseService().getCurrentUserID()) {
+    participantNames.add('moi');
+  } else {
+    String participantName = await DatabaseService().getUserName(participantID);
+    participantNames.add(participantName);
+  }
+}
 
-void _showEditTodoBottomSheet(BuildContext context, Todo todo) {
-  _todoNameController.text = todo.title;
-  _todoDescController.text = todo.description;
-  _todoEndDateController.text = todo.endDate;
-  var selectedCategory = todo.categoryID;
-  _todoPartController.text = todo.participants.join(",");
+_todoPartController.text = participantNames.join(",");
+
   File? newPhotoFile;
-  File? currentPhotoFile;
 
   showModalBottomSheet(
     context: context,
@@ -411,162 +469,187 @@ void _showEditTodoBottomSheet(BuildContext context, Todo todo) {
       return StatefulBuilder(
         builder: (BuildContext context, StateSetter setState) {
           return SingleChildScrollView(
-
-          child : Container(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  'Modifier la tâche',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
+            child: Container(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Modifier la tâche',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
-                ),
-                SizedBox(height: 16),
-                GestureDetector(
-                  onTap: () async {
-                    final imagePicker = ImagePicker();
-                    final pickedImage =
-                        await imagePicker.pickImage(source: ImageSource.gallery);
-                    if (pickedImage != null) {
-                      setState(() {
-                        newPhotoFile = File(pickedImage.path);
-                      });
-                    }
-                  },
-                  child: Container(
-                    color: Colors.grey.shade300,
-                    height: 150,
-                    width: double.infinity,
-                    child: Align(
-                      alignment: Alignment.center,
-                      child: FractionallySizedBox(
-                        widthFactor: 0.5,
-                        child: Stack(
-                          alignment: Alignment.center,
-                          children: [
-                             CircleAvatar(
-              radius: 50,
-              backgroundColor: Colors.white,
-              backgroundImage: (newPhotoFile != null)
-      ? FileImage(newPhotoFile!)
-      : (currentPhotoFile != null)
-          ? FileImage(currentPhotoFile)
-          // : (todo.photoUrl != null)
-          //     ? Image.network(todo.photoUrl)
-              : null,
-              child: (newPhotoFile == null && currentPhotoFile == null && todo.photoUrl == null)
-                  ? const Icon(
-                      Icons.person,
-                      size: 50,
-                      color: Colors.grey,
-                    )
-                  : null,
-            ),
-                            (newPhotoFile != null || currentPhotoFile != null)
-                                ? Positioned(
-                                    top: 0,
-                                    right: 0,
-                                    child: CircleAvatar(
-                                      radius: 14,
-                                      backgroundColor: Colors.white,
-                                      child: IconButton(
-                                        icon: Icon(
-                                          Icons.close,
-                                          size: 12,
-                                          color: Colors.black,
+                  SizedBox(height: 16),
+                  GestureDetector(
+                    onTap: () async {
+                      final imagePicker = ImagePicker();
+                      final pickedImage = await imagePicker.pickImage(source: ImageSource.gallery);
+                      if (pickedImage != null) {
+                        setState(() {
+                          newPhotoFile = File(pickedImage.path);
+                        });
+                      }
+                    },
+                    child: Container(
+                      color: Colors.grey.shade300,
+                      height: 150,
+                      width: double.infinity,
+                      child: Align(
+                        alignment: Alignment.center,
+                        child: FractionallySizedBox(
+                          widthFactor: 0.5,
+                          child: Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              CircleAvatar(
+                                radius: 50,
+                                backgroundColor: Colors.white,
+                                backgroundImage: (newPhotoFile != null)
+                                    ? FileImage(newPhotoFile!) 
+                                    : (todo.photoUrl != null)
+                                            ? NetworkImage(todo.photoUrl) as ImageProvider<Object>? 
+                                            : null,
+                                child: (newPhotoFile == null &&
+                                        todo.photoUrl == null)
+                                    ? const Icon(
+                                        Icons.person,
+                                        size: 50,
+                                        color: Colors.grey,
+                                      )
+                                    : null,
+                              ),
+                              (newPhotoFile != null)
+                                  ? Positioned(
+                                      top: 0,
+                                      right: 0,
+                                      child: CircleAvatar(
+                                        radius: 14,
+                                        backgroundColor: Colors.white,
+                                        child: IconButton(
+                                          icon: Icon(
+                                            Icons.close,
+                                            size: 12,
+                                            color: Colors.black,
+                                          ),
+                                          onPressed: () {
+                                            setState(() {
+                                              newPhotoFile = null;
+                                            });
+                                          },
                                         ),
-                                        onPressed: () {
-                                          setState(() {
-                                            newPhotoFile = null;
-                                          });
-                                        },
                                       ),
-                                    ),
-                                  )
-                                : SizedBox(),
-                          ],
+                                    )
+                                  : SizedBox(),
+                            ],
+                          ),
                         ),
                       ),
                     ),
                   ),
-                ),
-                SizedBox(height: 8),
-                TextField(
-                  controller: _todoNameController,
-                  decoration: InputDecoration(
-                    labelText: 'Nom',
-                    hintText: 'Entrez le nom de la tâche',
+                  SizedBox(height: 8),
+                  TextField(
+                    controller: _todoNameModifController,
+                    decoration: InputDecoration(
+                      labelText: 'Nom',
+                      hintText: 'Entrez le nom de la tâche',
+                    ),
                   ),
-                ),
-                SizedBox(height: 8),
-                TextField(
-                  controller: _todoDescController,
-                  decoration: InputDecoration(
-                    labelText: 'Description',
-                    hintText: 'Entrez la description de la tâche',
+                  SizedBox(height: 8),
+                  TextField(
+                    controller: _todoDescModifController,
+                    decoration: InputDecoration(
+                      labelText: 'Description',
+                      hintText: 'Entrez la description de la tâche',
+                    ),
                   ),
-                ),
-                SizedBox(height: 8),
-                TextField(
-                  controller: _todoPartController,
-                  decoration: InputDecoration(
-                    labelText: 'Participant',
-                    hintText: 'Entrez le nom du participant',
+                  SizedBox(height: 8),
+                  TextField(
+                    controller: _todoPartController,
+                    decoration: InputDecoration(
+                      labelText: 'Participant',
+                      hintText: 'Entrez le nom du participant',
+                    ),
                   ),
-                ),
-                SizedBox(height: 8),
-                TextField(
-                  controller: _todoEndDateController,
-                  decoration: InputDecoration(
-                    labelText: 'Date de fin',
-                    hintText: 'Entrez la date de fin de la tâche',
+                  SizedBox(height: 8),
+                  TextFormField(
+                        controller: _todoEndDateModifController,
+                        readOnly: true,
+                        decoration: InputDecoration(
+                          labelText: 'Date de fin',
+                          hintText: 'Entrez la date de fin de la tâche',
+                          suffixIcon: Icon(Icons.calendar_today),
+                        ),
+                        onTap: () async {
+                          DateTime initialDate = DateTime.now();
+                          if (_todoEndDateModifController.text.isNotEmpty) {
+                            try {
+                              initialDate = DateTime.parse(_todoEndDateModifController.text);
+                            } catch (e) {
+                              print(e);
+                            }
+                          }
+
+                          final selectedDate = await showDatePicker(
+                            context: context,
+                            initialDate: initialDate,
+                            firstDate: DateTime(2023),
+                            lastDate: DateTime(2100),
+                          );
+
+                          if (selectedDate != null) {
+                            final formattedDate = DateFormat('yyyy-MM-dd').format(selectedDate);
+                            _todoEndDateModifController.text = formattedDate;
+                          }
+                        },
+                      ),
+
+
+                  SizedBox(height: 8),
+                 DropdownButtonFormField<String>(
+                      value: null,
+                      
+                      items: categories.map((category) {
+                        return DropdownMenuItem<String>(
+                          value: category.categoryID,
+                          child: Text(category.title),
+                        );
+                      }).toList(),
+                       onChanged: (Value) {
+                      setState(() {
+                        selectedCategory = Value!;
+                      });
+                    },
+                      decoration: InputDecoration(
+                        labelText: selected,
+                        hintText: 'Sélectionnez une catégorie',
+                      ),
+                    ),
+
+                  SizedBox(height: 16),
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xff3B999B),
+                    ),
+                    onPressed: () async {
+                      // Appeler la méthode de mise à jour de la tâche dans DatabaseService
+                      DatabaseService().updateTodo(
+                        todo.uid,
+                        name: _todoNameController.text,
+                        description: _todoDescController.text,
+                        endDate: _todoEndDateController.text,
+                        categoryID: selectedCategory,
+                        participant: _todoPartController.text,
+                        photo: (newPhotoFile == null) ? todo.photoUrl : await _uploadPhoto(newPhotoFile!),
+                      );
+                      Navigator.pop(context); // Fermer la bottom sheet
+                    },
+                    child: Text('Modifier'),
                   ),
-                ),
-                SizedBox(height: 8),
-                DropdownButtonFormField<String>(
-                  value: selectedCategory,
-                  onChanged: (value) {
-                    setState(() {
-                      selectedCategory = value!;
-                    });
-                  },
-                  items: categories.map((category) {
-                    return DropdownMenuItem<String>(
-                      value: category.categoryID,
-                      child: Text(category.title),
-                    );
-                  }).toList(),
-                  decoration: InputDecoration(
-                    labelText: 'Catégorie',
-                    hintText: 'Sélectionnez une catégorie',
-                  ),
-                ),
-                SizedBox(height: 16),
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xff3B999B),
-                  ),
-                  onPressed: () async {
-                    // Appeler la méthode de mise à jour de la tâche dans DatabaseService
-                    DatabaseService().updateTodo(
-                      todo.uid,
-                      name: _todoNameController.text,
-                      description: _todoDescController.text,
-                      endDate: _todoEndDateController.text,
-                      categoryID: selectedCategory,
-                      participant: _todoPartController.text,
-                      photo: await _uploadPhoto(newPhotoFile!),
-                    );
-                    Navigator.pop(context); // Fermer la bottom sheet
-                  },
-                  child: Text('Modifier'),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
           );
         },
       );
@@ -800,7 +883,7 @@ GestureDetector(
                 context: context,
                 initialDate: endDate,
                 firstDate: DateTime(2023),
-                lastDate: DateTime(2030),
+                lastDate: DateTime(2050),
               );
 
               if (selectedDate != null) {
@@ -845,7 +928,7 @@ GestureDetector(
                 borderRadius: BorderRadius.circular(5),
               ),
               child: DropdownButtonFormField<String>(
-  value: categories[0].categoryID,
+  value: null,
   onChanged: (value) {
     setState(() {
       selectedCategory = value!;
@@ -899,7 +982,7 @@ GestureDetector(
     
       String photoUrl = await _uploadPhoto(photoFile!);
       String categoryID = selectedCategory;
-      String date = '${DateTime.now().day}-${DateTime.now().month.toString().padLeft(2, '0')}-${DateTime.now().year}';
+      String date = '${DateTime.now().day.toString().padLeft(2, '0')}-${DateTime.now().month.toString().padLeft(2, '0')}-${DateTime.now().year}';
       String? user = FirebaseAuth.instance.currentUser?.email;
       List<String> participants = selectedParticipants;
       await DatabaseService().createNewTodo(
@@ -915,7 +998,7 @@ GestureDetector(
       _todoNameController.clear();
       _todoDescController.clear();
       _todoEndDateController.clear();
-      clearText();
+      _clearText();
       // ignore: use_build_context_synchronously
       Navigator.pop(context);
       setState(() {

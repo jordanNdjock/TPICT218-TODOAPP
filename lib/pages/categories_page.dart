@@ -6,18 +6,13 @@ import 'package:firebase_auth/firebase_auth.dart';
 
 
 final categoriesProvider = StreamProvider<List<Category>>((ref) {
-  User? user = FirebaseAuth.instance.currentUser;
-  String userId = user!.email!;
-  return DatabaseService().streamCategories(userId);
+  return DatabaseService().streamCategories(DatabaseService().getCurrentUserID());
 });
 
 
 class CategoriesPage extends ConsumerWidget {
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
-
- 
-
 
   Future<void> _createCategory(BuildContext context, String userId) async {
   String name = _nameController.text.trim();

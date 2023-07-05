@@ -332,7 +332,7 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
             "Créer un compte",
             style: TextStyle(
               color: Colors.black,
-              fontSize: 30,
+              fontSize: 20,
               fontWeight: FontWeight.w700,
             ),
           ),
