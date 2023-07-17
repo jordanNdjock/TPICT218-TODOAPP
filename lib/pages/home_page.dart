@@ -372,7 +372,8 @@ StreamBuilder<List<Todo>>(
                           color: Colors.black54,
                         ),
                       ),
-                      SizedBox(height:05,),
+                      SizedBox(height:05),
+                     
                       AnimatedContainer(
                         duration: Duration(seconds: 1),
                         height: 05,
@@ -566,6 +567,7 @@ _todoPartController.text = participantNames.join(",");
                   ),
                   SizedBox(height: 8),
                   TextField(
+                    readOnly: true,
                     controller: _todoPartController,
                     decoration: InputDecoration(
                       labelText: 'Participant',
@@ -599,7 +601,7 @@ _todoPartController.text = participantNames.join(",");
                           );
 
                           if (selectedDate != null) {
-                            final formattedDate = DateFormat('yyyy-MM-dd').format(selectedDate);
+                            final formattedDate = DateFormat('dd-MM-yyyy').format(selectedDate);
                             _todoEndDateModifController.text = formattedDate;
                           }
                         },
@@ -636,9 +638,9 @@ _todoPartController.text = participantNames.join(",");
                       // Appeler la méthode de mise à jour de la tâche dans DatabaseService
                       DatabaseService().updateTodo(
                         todo.uid,
-                        name: _todoNameController.text,
-                        description: _todoDescController.text,
-                        endDate: _todoEndDateController.text,
+                        name: _todoNameModifController.text,
+                        description: _todoDescModifController.text,
+                        endDate: _todoEndDateModifController.text,
                         categoryID: selectedCategory,
                         participant: _todoPartController.text,
                         photo: (newPhotoFile == null) ? todo.photoUrl : await _uploadPhoto(newPhotoFile!),
@@ -700,7 +702,7 @@ List<Users> userList = []; // Liste des utilisateurs
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
             Container(
-              height:670,
+              height:690,
               width: MediaQuery.of(context).size.width,
               margin: const EdgeInsets.symmetric(horizontal: 10),
               child: Column(
@@ -717,13 +719,14 @@ List<Users> userList = []; // Liste des utilisateurs
                       "Ajouter une tâche",
                       style: TextStyle(
                         color: Colors.black,
-                        fontSize: 30,
+                        fontSize: 20,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
                   ),
+                  Text('veuillez remplir tous les champs (les participants sont facultatifs !)'),
                   const SizedBox(
-                    height: 30,
+                    height: 20,
                   ),
 // Déclaration de la variable photoFile
 
@@ -975,16 +978,17 @@ GestureDetector(
                           circular = true;
                         });
                         try {
-                          if (_todoNameController.text.isNotEmpty &&
-      _todoDescController.text.isNotEmpty &&
-      _todoEndDateController.text.isNotEmpty) {
-   
-    
-      String photoUrl = await _uploadPhoto(photoFile!);
+                          String photoUrl = await _uploadPhoto(photoFile!);
       String categoryID = selectedCategory;
       String date = '${DateTime.now().day.toString().padLeft(2, '0')}-${DateTime.now().month.toString().padLeft(2, '0')}-${DateTime.now().year}';
       String? user = FirebaseAuth.instance.currentUser?.email;
       List<String> participants = selectedParticipants;
+
+      if (_todoNameController.text.isNotEmpty &&
+      _todoDescController.text.isNotEmpty &&
+      _todoEndDateController.text.isNotEmpty && categoryID.isNotEmpty && photoUrl.isNotEmpty && date.isNotEmpty) {
+   
+      
       await DatabaseService().createNewTodo(
         title: _todoNameController.text.trim(),
         description: _todoDescController.text.trim(),
@@ -1170,7 +1174,8 @@ void _selectPhotoFromGallery() async {
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.transparent, elevation: 0.0),
-                  onPressed: () {
+                  onPressed: () async {
+                    await FirebaseAuth.instance.signOut();
                     Navigator.push(
                       context,
                       MaterialPageRoute(

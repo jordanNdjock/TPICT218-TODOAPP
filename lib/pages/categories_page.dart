@@ -6,7 +6,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 
 
 final categoriesProvider = StreamProvider<List<Category>>((ref) {
-  return DatabaseService().streamCategories(DatabaseService().getCurrentUserID());
+  User? user = FirebaseAuth.instance.currentUser;
+  return DatabaseService().streamCategories(user!.email!);
 });
 
 

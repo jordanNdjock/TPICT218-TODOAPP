@@ -14,6 +14,7 @@ class DatabaseService {
 
   CollectionReference todosCollection = FirebaseFirestore.instance.collection("Todo");
   CollectionReference usersCollection = FirebaseFirestore.instance.collection("users");
+  
   Future<DocumentReference> createNewTodo({
     required String title,
     required String description,
